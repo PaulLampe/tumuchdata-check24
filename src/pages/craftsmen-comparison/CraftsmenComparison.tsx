@@ -12,7 +12,7 @@ import {
 import CraftsmanCard from "./CrafstmanCard.tsx";
 import {useDuckDBFunctions} from "../../data/duckdb/DuckDBHooks.ts";
 import {useState} from "react";
-import {CraftsmanDto} from "../../types/craftsman.ts";
+import {CraftsmanDto} from "../../types/craftsmanTypes.ts";
 
 const post_codes = ["91541", "84562", "55546", "48612", "21770", "56829", "91239", "67655", "67141", "91217"];
 

@@ -5,10 +5,12 @@ import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?ur
 import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
 import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
 import {createContext, PropsWithChildren, useCallback, useEffect, useState} from "react";
-import {CraftsmanDto} from "../../types/craftsman.ts";
+import {CraftsmanDto} from "../../types/craftsmanTypes.ts";
 import {postcodes} from "../../mock/postcodes.ts";
 import {quality_factors} from "../../mock/quality_factor_score.ts";
 import {craftsmen} from "../../mock/service_provider_profile.ts";
+import {findCraftsmenByPostCode} from "../queries/findCraftsmenByPostCode.ts";
+import {findCraftsmenByLocation} from "../queries/findCraftsmenByLocation.ts";
 
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
@@ -45,7 +47,7 @@ export function DuckDBWrapper(props: PropsWithChildren) {
     const query2 = async (lat: number, long: number, dist: number = 0.5, profile: number = 0.5) => {
         if (conn && stmnt2) {
             const q = await stmnt2.query(lat, long, dist, profile);
-            return JSON.parse(q.toString());
+            return q.toArray().map((row: unknown) => (row as any).toJSON());
         }
     }
 
@@ -72,60 +74,10 @@ export function DuckDBWrapper(props: PropsWithChildren) {
         await db.registerFileBuffer("post_code", post_code);
         await c.insertJSONFromPath("post_code", {schema: "main", name: "post_codes"});
 
-        const s = await c.prepare(`
-            SELECT 
-                *,
-                ? * PI() / 180 as lat1, 
-                ? * PI() / 180 as long1,
-                c.lat * PI() / 180 as lat2,
-                c.lon * PI() / 180 as long2,
-                SIN(lat1) * SIN(lat2) as sin_prod,
-                COS(lat1) * COS(lat2) as cos_prod,
-                COS(long2 - long1) as cos_diff,
-                ACOS(sin_prod + cos_prod * cos_diff) * 6371 as dist,
-                80 as default_distance,
-                1.00 - (dist/default_distance) as dist_score,
-                case when dist > default_distance then 0.01 else 0.15 end as dist_weight,
-                profile_picture_score * 0.4 + profile_description_score * 0.6 as profile_score,
-                dist_weight * dist_score + (1 - dist_weight) * profile_score as rank,
-                case 
-                    when postcode_extension_distance_group='group_a' then max_driving_distance
-                    when postcode_extension_distance_group='group_b' then max_driving_distance + 2000
-                    when postcode_extension_distance_group='group_c' then max_driving_distance + 5000
-                end as max_driving_distance
-            FROM mock_craftsmen c, post_codes p, mock_factor f
-            WHERE 
-                p.postcode = ? and 
-                dist * 1000 < max_driving_distance and
-                f.profile_id = c.id
-            ORDER BY rank DESC
-            LIMIT 20;
-        `);
+        const s = await c.prepare(findCraftsmenByPostCode);
         setStmnt(s);
 
-        const s2 = await c.prepare(`
-            SELECT 
-                *,
-                ? * PI() / 180 as lat1, 
-                ? * PI() / 180 as long1,
-                c.lat * PI() / 180 as lat2,
-                c.lon * PI() / 180 as long2,
-                SIN(lat1) * SIN(lat2) as sin_prod,
-                COS(lat1) * COS(lat2) as cos_prod,
-                COS(long2 - long1) as cos_diff,
-                ACOS(sin_prod + cos_prod * cos_diff) * 6371 as dist,
-                80 as default_distance,
-                1.00 - (dist/default_distance) as dist_score,
-                case when dist > default_distance then 0.01 else 0.15 end as dist_weight,
-                profile_picture_score * 0.4 + profile_description_score * 0.6 as profile_score,
-                dist_weight * dist_score * ? + (1 - dist_weight) * profile_score * ? as rank
-            FROM mock_craftsmen c, mock_factor f
-            WHERE 
-                dist * 1000 < max_driving_distance and
-                f.profile_id = c.id
-            ORDER BY rank DESC
-            LIMIT 20;
-        `);
+        const s2 = await c.prepare(findCraftsmenByLocation);
         setStmnt2(s2);
 
         setDB(db);

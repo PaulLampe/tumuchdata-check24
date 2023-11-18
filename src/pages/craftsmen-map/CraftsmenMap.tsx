@@ -4,7 +4,7 @@ import {LatLngTuple, LatLng} from "leaflet";
 import {useDuckDBFunctions} from "../../data/duckdb/DuckDBHooks.ts";
 import {CraftsmenPinDisplay} from "./CraftsmenPinDisplay.tsx";
 import {useState, useMemo} from "react";
-import {CraftsmanDto} from "../../types/craftsman.ts";
+import {CraftsmanDto} from "../../types/craftsmanTypes.ts";
 
 function throttle(mainFunction : (...args: any[]) => void, delay: number) {
     let timerFlag: any = null; // Variable to keep track of the timer
@@ -49,7 +49,7 @@ export default function CraftsmenMap() {
                 <Text fontSize='4xl' fontWeight={700}>Check24 x TUMuchData - Craftsmen Comparison</Text>
             </Center>
             <Center>
-                <Slider aria-label='slider-ex-1' value={sliderVal} onChange={(val) => throttledSliderQuery(val)} min={0} max={100}>
+                <Slider aria-label='slider-ex-1' value={sliderVal} onChange={(val) => throttledSliderQuery(val)} step={4} min={0} max={100}>
                     <SliderTrack>
                         <SliderFilledTrack/>
                     </SliderTrack>

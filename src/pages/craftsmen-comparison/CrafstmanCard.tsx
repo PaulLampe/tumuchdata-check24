@@ -1,4 +1,4 @@
-import {CraftsmanDto} from "../../types/craftsman.ts";
+import {CraftsmanDto} from "../../types/craftsmanTypes.ts";
 import {Card, Grid, Text} from "@chakra-ui/react";
 
 interface CraftsmanCardProps {

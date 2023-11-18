@@ -1,10 +1,9 @@
 import {Marker, useMapEvents, Popup} from "react-leaflet";
 import {useState} from "react";
-import {CraftsmanDto} from "../../types/craftsman.ts";
-import { LeafletEvent, LatLng, icon, LatLngTuple } from "leaflet";
+import {CraftsmanDto} from "../../types/craftsmanTypes.ts";
+import {LeafletEvent, LatLng, icon, LatLngTuple} from "leaflet";
 import greenMarker from '../../assets/map-marker-green.svg';
 import redMarker from '../../assets/map-marker.svg';
-
 
 
 interface CraftsmenPinDisplayProps {
@@ -22,14 +21,14 @@ export function CraftsmenPinDisplay(props: CraftsmenPinDisplayProps) {
         iconUrl: greenMarker,
         iconSize: [40, 50],
         iconAnchor: [20, 50],
-        tooltipAnchor: [20, 50]
+        popupAnchor: [0, -40]
     });
 
     const centerIcon = icon({
         iconUrl: redMarker,
         iconSize: [40, 50],
         iconAnchor: [20, 50],
-        tooltipAnchor: [20, -100]
+        popupAnchor: [0, 0]
     });
 
     useMapEvents({
@@ -43,8 +42,9 @@ export function CraftsmenPinDisplay(props: CraftsmenPinDisplayProps) {
 
     return <>
         {
-            craftsmen?.map((c) => <Marker position={[c.lat, c.lon]} key={c.id} icon={craftsmanIcon}><Popup>{c.first_name + " " + c.last_name}</Popup></Marker>)
+            craftsmen?.map((c) => <Marker position={[c.lat, c.lon]} key={c.id} // TODO: Format
+                                          icon={craftsmanIcon}><Popup>{c.first_name + " " + c.last_name + " " + c.profile_score + "/3" + " " + c.test}</Popup></Marker>)
         }
         <Marker position={center} icon={centerIcon}/>
-        </>;
+    </>;
 }
