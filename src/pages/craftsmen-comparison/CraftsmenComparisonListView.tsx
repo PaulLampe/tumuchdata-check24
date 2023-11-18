@@ -1,5 +1,5 @@
 import {
-    Flex,
+    Center,
     List,
     ListItem,
 } from "@chakra-ui/react";
@@ -8,17 +8,17 @@ import {CraftsmanDto} from "../../types/craftsmanTypes.ts";
 
 
 export default function CraftsmenComparisonListView({craftsmen}: { craftsmen: CraftsmanDto[] }) {
-    return <>
-        <Flex overflow={"scroll"} flex={1} width={"100%"}>
-            <List width={"100%"}>
+    return (
+        <Center flex={1} width={"100%"} height={"100%"}>
+            <List overflow={"scroll"} width={"100%"} height={"100%"} maxWidth={"container.lg"}>
                 {
                     craftsmen?.map((c) => (
                         <ListItem key={c.id}>
-                            <CraftsmanCard craftsman={c}></CraftsmanCard>
+                            <CraftsmanCard craftsman={c}/>
                         </ListItem>
                     ))
                 }
             </List>
-        </Flex>
-    </>
+        </Center>
+    );
 }

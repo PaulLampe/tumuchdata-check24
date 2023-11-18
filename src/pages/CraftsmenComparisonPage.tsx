@@ -37,16 +37,16 @@ export function CraftsmenComparisonPage() {
                 backgroundColor={"#fff"}
             />
         </Flex>
-        <Tabs isFitted variant='enclosed' width={"100%"}>
+        <Tabs isFitted variant='enclosed' width={"100%"} height={"100%"} overflow={"hidden"}>
             <TabList>
                 <Tab>List</Tab>
                 <Tab>Map</Tab>
             </TabList>
-            <TabPanels>
-                <TabPanel>
+            <TabPanels height={"calc(100% - 42px)"} width={"100%"}>
+                <TabPanel height={"100%"} width={"100%"}>
                     <CraftsmenComparisonListView craftsmen={data}/>
                 </TabPanel>
-                <TabPanel>
+                <TabPanel height={"100%"}>
                     <CraftsmenMap/>
                 </TabPanel>
             </TabPanels>
