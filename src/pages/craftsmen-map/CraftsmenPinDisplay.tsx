@@ -43,7 +43,7 @@ export function CraftsmenPinDisplay(props: CraftsmenPinDisplayProps) {
     return <>
         {
             craftsmen?.map((c) => <Marker position={[c.lat, c.lon]} key={c.id} // TODO: Format
-                                          icon={craftsmanIcon}><Popup>{c.first_name + " " + c.last_name + " " + c.profile_score + "/3" + " " + c.test}</Popup></Marker>)
+                                          icon={craftsmanIcon}><Popup>{c.first_name + " " + c.last_name + " " + c.profile_score + "/3"}</Popup></Marker>)
         }
         <Marker position={center} icon={centerIcon}/>
     </>;

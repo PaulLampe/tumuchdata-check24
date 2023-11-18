@@ -7,10 +7,8 @@ import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url'
 import {createContext, PropsWithChildren, useCallback, useEffect, useState} from "react";
 import {CraftsmanDto} from "../../types/craftsmanTypes.ts";
 import {postcodes} from "../../mock/postcodes.ts";
-import {quality_factors} from "../../mock/quality_factor_score.ts";
-import {craftsmen} from "../../mock/service_provider_profile.ts";
+import {schema} from "../queries/initSchema.ts";
 import {findCraftsmenByPostCode} from "../queries/findCraftsmenByPostCode.ts";
-import {findCraftsmenByLocation} from "../queries/findCraftsmenByLocation.ts";
 
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
@@ -24,8 +22,10 @@ const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
 };
 
 export interface DuckDBWrapperValues {
-    query: (i: string) => Promise<CraftsmanDto[]>
-    query2: (lat: number, long: number, dist: number, profile: number) => Promise<CraftsmanDto[]>
+    query: (i: string) => Promise<CraftsmanDto[]>;
+    //query2: (lat: number, long: number, dist: number, profile: number) => Promise<CraftsmanDto[]>;
+    conn?: duckdb.AsyncDuckDBConnection;
+    db?: duckdb.AsyncDuckDB
 }
 
 export const DuckDBWrapperContext = createContext<DuckDBWrapperValues | undefined>(undefined);
@@ -35,21 +35,21 @@ export function DuckDBWrapper(props: PropsWithChildren) {
 
     const [db, setDB] = useState<duckdb.AsyncDuckDB>();
     const [conn, setConn] = useState<duckdb.AsyncDuckDBConnection>();
-    const [stmnt, setStmnt] = useState<duckdb.AsyncPreparedStatement>();
-    const [stmnt2, setStmnt2] = useState<duckdb.AsyncPreparedStatement>();
+    const [getByPostalCodeStatement, setGetByPostalCodeStatement] = useState<duckdb.AsyncPreparedStatement>();
+    // const [stmnt2, setStmnt2] = useState<duckdb.AsyncPreparedStatement>();
     const query = async (code: string) => {
-        if (conn && stmnt) {
-            const q = await stmnt.query(code);
-            return JSON.parse(q.toString());
+        if (conn && getByPostalCodeStatement) {
+            const q = await getByPostalCodeStatement.query(code);
+            return q.toArray().map((row: { toJSON: () => CraftsmanDto}) => row.toJSON());
         }
     }
 
-    const query2 = async (lat: number, long: number, dist: number = 0.5, profile: number = 0.5) => {
+    /*const query2 = async (lat: number, long: number, dist: number = 0.5, profile: number = 0.5) => {
         if (conn && stmnt2) {
             const q = await stmnt2.query(lat, long, dist, profile);
             return q.toArray().map((row: unknown) => (row as any).toJSON());
         }
-    }
+    }*/
 
     async function setup() {
         const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
@@ -59,40 +59,32 @@ export function DuckDBWrapper(props: PropsWithChildren) {
         await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
 
         const c = await db.connect();
+        await c.query(schema);
 
         const encoder = new TextEncoder();
-        const buffer = encoder.encode(JSON.stringify(craftsmen));
-        await db.registerFileBuffer("mock_craftsmen", buffer);
-        await c.insertJSONFromPath("mock_craftsmen", {schema: "main", name: "mock_craftsmen"});
-
-        const factorBuffer = encoder.encode(JSON.stringify(quality_factors));
-        await db.registerFileBuffer("mock_factor", factorBuffer);
-        await c.insertJSONFromPath("mock_factor", {schema: "main", name: "mock_factor"});
-
-
         const post_code = encoder.encode(JSON.stringify(postcodes));
-        await db.registerFileBuffer("post_code", post_code);
-        await c.insertJSONFromPath("post_code", {schema: "main", name: "post_codes"});
+        await db.registerFileBuffer("postcode", post_code);
+        await c.insertJSONFromPath("postcode", {name: "postcodes"});
 
-        const s = await c.prepare(findCraftsmenByPostCode);
-        setStmnt(s);
+        const postalCodeStatement = await c.prepare(findCraftsmenByPostCode);
+        setGetByPostalCodeStatement(postalCodeStatement);
 
-        const s2 = await c.prepare(findCraftsmenByLocation);
-        setStmnt2(s2);
+        //const s2 = await c.prepare(findCraftsmenByLocation);
+        //setStmnt2(s2);
 
         setDB(db);
         setConn(c);
     }
 
-    const cleanup = useCallback(async () => {
-        if (stmnt) {
-            await stmnt.close();
+    const teardown = useCallback(async () => {
+        if (getByPostalCodeStatement) {
+            await getByPostalCodeStatement.close();
             console.log("cleaned up statement")
         }
-        if (stmnt2) {
+        /*if (stmnt2) {
             await stmnt2.close();
             console.log("cleaned up statement")
-        }
+        }*/
         if (conn) {
             await conn.close();
             console.log("cleaned up conn")
@@ -109,9 +101,9 @@ export function DuckDBWrapper(props: PropsWithChildren) {
 
     useEffect(() => {
         return () => {
-            cleanup();
+            teardown();
         }
-    }, [cleanup, db, conn]);
+    }, [teardown, db, conn]);
 
-    return <DuckDBWrapperContext.Provider value={{query, query2}}>{children}</DuckDBWrapperContext.Provider>
+    return <DuckDBWrapperContext.Provider value={{query, /*query2,*/ conn, db}}>{children}</DuckDBWrapperContext.Provider>
 }
