@@ -8,7 +8,7 @@ export async function fetchCraftsmenAsync(postcode: string, conn?: duckdb.AsyncD
             // TODO: Check if there is any way to make this somehow at least a bit performant. As of no wthere is no upserting with json streams
             let qs = "INSERT OR REPLACE INTO service_provider_profile(id, first_name, last_name, lat, lon, profile_score, max_driving_distance, profile_picture_link) VALUES";
             rows.forEach((row: CraftsmanDto) => {
-                qs += `(${row.id}, '${row.first_name}', '${row.last_name}', ${row.lat}, ${row.lon}, ${row.profile_score}, ${row.max_driving_distance}, ${row.profile_picture_link}),`
+                qs += `(${row.id}, '${row.first_name}', '${row.last_name}', ${row.lat}, ${row.lon}, ${row.profile_score}, ${row.max_driving_distance}, 'http://18.194.1.200:80/profile/${row.profile_picture_link.replace("//", "/")}'),`
             });
             conn?.query(qs.slice(0, -1) + ';');
         }
@@ -19,10 +19,14 @@ export async function fetchCraftsmenBatchAsync(postcodes: string[], conn?: duckd
     const queryString = `postalcodes=${postcodes.join(",")}&limit=40&skip=0`;
     return fetch("http://localhost:8000/craftsmen_range?" + queryString).then(res => res.json()).then((rows) => {
         if (rows.length != 0) {
+            const s = new Set<string>();
             // TODO: Check if there is any way to make this somehow at least a bit performant. As of no wthere is no upserting with json streams
-            let qs = "INSERT OR REPLACE INTO service_provider_profile(id, first_name, last_name, lat, lon, profile_score, max_driving_distance, profile_picture_link) VALUES";
+            let qs = "INSERT OR REPLACE INTO service_provider_profile(id, first_name, last_name, lat, lon, profile_score, max_driving_distance) VALUES";
             rows.forEach((row: CraftsmanDto) => {
-                qs += `(${row.id}, '${row.first_name}', '${row.last_name}', ${row.lat}, ${row.lon}, ${row.profile_score}, ${row.max_driving_distance}, ${row.profile_picture_link}),`
+                if(!s.has(row.id)) {
+                    s.add(row.id);
+                    qs += `(${row.id}, '${row.first_name}', '${row.last_name}', ${row.lat}, ${row.lon}, ${row.profile_score}, ${row.max_driving_distance}),`;
+                }
             });
             conn?.query(qs.slice(0, -1) + ';');
         }

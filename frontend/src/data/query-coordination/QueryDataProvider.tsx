@@ -33,24 +33,15 @@ export function QueryDataProvider({children}: PropsWithChildren) {
                 return;
             }
             const fetchableCodes = postCodes.filter(code => !cacheRef.current.has(code));
-            const chunkSize = 16;
-            const chunks: string[][] = [];
-            for (let i = 0; i < fetchableCodes.length; i += chunkSize) {
-                const chunk = fetchableCodes.slice(i, i + chunkSize);
-                chunks.push(chunk);
-            }
-            chunks.forEach(chunk => {
-                    chunk.forEach(code => {
-                        cacheRef.current.set(code, false);
-                    });
-                    fetchCraftsmenBatchAsync(chunk, conn).then(() => {
-                        chunk.forEach(code => {
-                            cacheRef.current.set(code, true);
-                            callbackRef.current.get(code)?.forEach((fn) => {
-                                fn();
-                            })
-                            callbackRef.current.set(code, []);
-                        });
+
+            fetchableCodes.forEach(code => {
+                    cacheRef.current.set(code, false);
+                    fetchCraftsmenAsync(code, conn).then(() => {
+                        cacheRef.current.set(code, true);
+                        callbackRef.current.get(code)?.forEach((fn) => {
+                            fn();
+                        })
+                        callbackRef.current.set(code, []);
                     })
                 }
             )
