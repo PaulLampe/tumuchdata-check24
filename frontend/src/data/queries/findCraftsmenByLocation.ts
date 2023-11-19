@@ -20,6 +20,7 @@ export const findCraftsmenByLocation = `
             SIN(lat1) * SIN(lat2) as sin_prod,
             COS(lat1) * COS(lat2) as cos_prod,
             COS(long2 - long1) as cos_diff,
+            profile_picture_link,
             ACOS(sin_prod + cos_prod * cos_diff) * 6371 as dist,
             80::double as default_distance,
             1.00 - (dist::double/default_distance::double) as dist_score,

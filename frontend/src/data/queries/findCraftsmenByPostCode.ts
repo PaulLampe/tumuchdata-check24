@@ -9,7 +9,8 @@ export const findCraftsmenByPostCode = `
         dist as distance_to_user_km,
         profile_score,
         lat, 
-        lon
+        lon,
+        profile_picture_link
     FROM (
         SELECT
             *,
@@ -23,6 +24,7 @@ export const findCraftsmenByPostCode = `
             ACOS(sin_prod + cos_prod * cos_diff) * 6371 as dist,
             80::double as default_distance,
             1.00 - (dist::double/default_distance::double) as dist_score,
+            profile_picture_link,
             case when dist::double > default_distance::double then 0.01::double else 0.15::double end as dist_weight,
             dist_weight::double * dist_score::double + (1.00::double - dist_weight::double) * profile_score::double as rank,
         FROM 

@@ -8,7 +8,7 @@ export async function fetchCraftsmenAsync(postcode: string, conn?: duckdb.AsyncD
             // TODO: Check if there is any way to make this somehow at least a bit performant. As of no wthere is no upserting with json streams
             let qs = "INSERT OR REPLACE INTO service_provider_profile(id, first_name, last_name, lat, lon, profile_score, max_driving_distance, profile_picture_link) VALUES";
             rows.forEach((row: CraftsmanDto) => {
-                qs += `(${row.id}, '${row.first_name}', '${row.last_name}', ${row.lat}, ${row.lon}, ${row.profile_score}, ${row.max_driving_distance}, 'http://18.194.1.200:80/profile/${row.profile_picture_link.replace("//", "/")}'),`
+                qs += `(${row.id}, '${row.first_name}', '${row.last_name}', ${row.lat}, ${row.lon}, ${row.profile_score}, ${row.max_driving_distance}, '${row.profile_picture_link}'),`
             });
             conn?.query(qs.slice(0, -1) + ';');
         }
