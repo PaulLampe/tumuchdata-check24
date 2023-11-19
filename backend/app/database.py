@@ -1,6 +1,8 @@
 
 from app.queries import find_craftsmen_by_postcode_query, ingest_data_query, schema_query, update_craftsmen_query
 from app.types import PatchRequest, CraftsmanDto
+from fastapi import WebSocket
+from typing import Set
 import os.path
 import duckdb
 
