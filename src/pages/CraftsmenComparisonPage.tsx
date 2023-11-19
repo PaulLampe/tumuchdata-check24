@@ -3,14 +3,15 @@ import CraftsmenComparisonListView from "./craftsmen-comparison/CraftsmenCompari
 import CraftsmenMap from "./craftsmen-map/CraftsmenMap.tsx";
 import {useQueryDataContext} from "../data/query-coordination/QueryDataProvider.tsx";
 import {useState} from "react";
+import {useQueryData} from "../data/query-coordination/useQueryData.tsx";
 
 export function CraftsmenComparisonPage() {
 
     const [postalCode, setPostalCode] = useState("");
 
-    const {useData, prefetchData} = useQueryDataContext();
+    const {prefetchData} = useQueryDataContext();
 
-    const {data} = useData(postalCode);
+    const {data, loading} = useQueryData(postalCode);
     const handleChange = (val: string) => {
         if (val.length == 4) {
             prefetchData(val);
@@ -44,7 +45,9 @@ export function CraftsmenComparisonPage() {
             </TabList>
             <TabPanels height={"calc(100% - 42px)"} width={"100%"}>
                 <TabPanel height={"100%"} width={"100%"}>
-                    <CraftsmenComparisonListView craftsmen={data}/>
+                    {
+                        !loading && <CraftsmenComparisonListView craftsmen={data}/>
+                    }
                 </TabPanel>
                 <TabPanel height={"100%"}>
                     <CraftsmenMap/>

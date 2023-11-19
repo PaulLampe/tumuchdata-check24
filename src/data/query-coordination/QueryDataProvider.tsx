@@ -1,6 +1,5 @@
-import {createContext, PropsWithChildren, useCallback, useContext, useMemo, useRef, useState} from "react";
+import {createContext, PropsWithChildren, useCallback, useContext, useMemo, useRef} from "react";
 import {useDuckDBFunctions} from "../duckdb/DuckDBHooks.ts";
-import {CraftsmanDto} from "../../types/craftsmanTypes.ts";
 import {fetchCraftsmenAsync} from "./asyncFetcher.tsx";
 import {findCloseByPostalCodes} from "../queries/findCloseBypostalCodes.ts";
 
@@ -8,7 +7,7 @@ import {findCloseByPostalCodes} from "../queries/findCloseBypostalCodes.ts";
 interface QueryDataContextValues {
     prefetchData: (prefix: string) => void;
     prefetchForPosition: (lat: number, long: number) => void;
-    useData: (postCode: string) => { loading: boolean, data: CraftsmanDto[] }
+    queryOrSchedule: (postCode: string, query: () => void) => void;
 }
 
 const QueryDataContext = createContext<QueryDataContextValues | undefined>(undefined)
@@ -18,7 +17,7 @@ export function QueryDataProvider({children}: PropsWithChildren) {
     const cacheRef = useRef<Map<string, boolean>>(new Map());
     const callbackRef = useRef<Map<string, (() => void)[]>>(new Map());
 
-    const {conn, queryCraftsmenByPostCode} = useDuckDBFunctions();
+    const {conn} = useDuckDBFunctions();
 
     const getPostCodesForPrefix = useCallback(async (prefix: string): Promise<string[]> => {
         return conn?.query(`select postcode from postcodes where postcode like '${prefix}%';`)
@@ -65,45 +64,26 @@ export function QueryDataProvider({children}: PropsWithChildren) {
         )
     }
 
-    const useData = (postCode: string): { loading: boolean, data: CraftsmanDto[] } => {
-        const [loading, setLoading] = useState(true);
-        const [data, setData] = useState<CraftsmanDto[]>([]);
-        const [loadedCode, setLoadedCode] = useState("");
-
-        if (postCode.length < 5) {
-            return {loading: true, data: []};
-        }
-
-        if (!loading && loadedCode == postCode) {
-            return {loading, data};
-        }
-
-        const queryAndLoad = () => queryCraftsmenByPostCode(postCode).then((craftsmen) => {
-            setLoadedCode(postCode);
-            setData(craftsmen);
-            setLoading(false);
-        });
-
-        if (cacheRef.current.has(postCode)) {
-            if (cacheRef.current.get(postCode)) {
-                queryAndLoad();
+    const queryOrSchedule =
+        (postCode: string, query: () => void) => {
+            if (cacheRef.current.has(postCode)) {
+                if (cacheRef.current.get(postCode)) {
+                    query();
+                } else {
+                    callbackRef.current.set(postCode, [...(callbackRef.current.get(postCode) ?? []), query])
+                }
             } else {
-                callbackRef.current.set(postCode, [...(callbackRef.current.get(postCode) ?? []), queryAndLoad])
+                fetchCraftsmenAsync(postCode, conn).then(() => {
+                    query();
+                })
             }
-        } else {
-            fetchCraftsmenAsync(postCode, conn).then(() => {
-                queryAndLoad();
-            })
         }
-
-        return {loading, data}
-    };
 
     const value = useMemo(() => ({
-        useData,
         prefetchData,
-        prefetchForPosition
-    }), [useData, prefetchData, prefetchForPosition]);
+        prefetchForPosition,
+        queryOrSchedule
+    }), [prefetchData, prefetchForPosition, queryOrSchedule]);
 
     return <QueryDataContext.Provider value={value}>
         {children}
