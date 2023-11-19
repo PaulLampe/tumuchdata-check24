@@ -1,6 +1,6 @@
 import {createContext, PropsWithChildren, useCallback, useContext, useMemo, useRef} from "react";
 import {useDuckDBFunctions} from "../duckdb/DuckDBHooks.ts";
-import {fetchCraftsmenAsync, fetchCraftsmenBatchAsync} from "./asyncFetcher.tsx";
+import {fetchCraftsmenAsync} from "./asyncFetcher.tsx";
 import {findCloseByPostalCodes} from "../queries/findCloseBypostalCodes.ts";
 
 
@@ -33,7 +33,7 @@ export function QueryDataProvider({children}: PropsWithChildren) {
                 return;
             }
             const fetchableCodes = postCodes.filter(code => !cacheRef.current.has(code));
-
+            console.log(fetchableCodes)
             fetchableCodes.forEach(code => {
                     cacheRef.current.set(code, false);
                     fetchCraftsmenAsync(code, conn).then(() => {
@@ -57,14 +57,13 @@ export function QueryDataProvider({children}: PropsWithChildren) {
     ;
 
     const prefetchForPosition = (lat: number, long: number) => {
+        console.log(conn);
         conn?.query(
             findCloseByPostalCodes(lat, long)
         )
             .then((res) => res.toArray().map(
-                (row: { toJSON: () => { postcode: string } }) => row.toJSON())
-            ).then((row) => {
-            return row.postcode
-        }).then((codes) => {
+                (row: { toJSON: () => { postcode: string } }) => row.toJSON().postcode)
+            ).then((codes) => {
                 prefetchCodes(codes);
             }
         )
