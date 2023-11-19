@@ -1,6 +1,6 @@
 import {createContext, PropsWithChildren, useCallback, useContext, useMemo, useRef} from "react";
 import {useDuckDBFunctions} from "../duckdb/DuckDBHooks.ts";
-import {fetchCraftsmenAsync} from "./asyncFetcher.tsx";
+import {fetchCraftsmenAsync, fetchCraftsmenBatchAsync} from "./asyncFetcher.tsx";
 import {findCloseByPostalCodes} from "../queries/findCloseBypostalCodes.ts";
 
 
@@ -8,6 +8,7 @@ interface QueryDataContextValues {
     prefetchData: (prefix: string) => void;
     prefetchForPosition: (lat: number, long: number) => void;
     queryOrSchedule: (postCode: string, query: () => void) => void;
+    refetchDataForScroll: (postCode: string, limit: number) => void;
 }
 
 const QueryDataContext = createContext<QueryDataContextValues | undefined>(undefined)
@@ -17,6 +18,7 @@ export function QueryDataProvider({children}: PropsWithChildren) {
     const cacheRef = useRef<Map<string, boolean>>(new Map());
     const callbackRef = useRef<Map<string, (() => void)[]>>(new Map());
 
+    const scrollTracker = useRef<Map<string, number>>(new Map());
     const {conn} = useDuckDBFunctions();
 
     const getPostCodesForPrefix = useCallback(async (prefix: string): Promise<string[]> => {
@@ -27,17 +29,28 @@ export function QueryDataProvider({children}: PropsWithChildren) {
 
     const prefetchCodes =
         (postCodes: string[] | undefined) => {
-            postCodes?.forEach(code => {
-                    if (cacheRef.current.has(code)) {
-                        return;
-                    }
-                    cacheRef.current.set(code, false);
-                    fetchCraftsmenAsync(code, conn).then(() => {
-                        cacheRef.current.set(code, true);
-                        callbackRef.current.get(code)?.forEach((fn) => {
-                            fn();
-                        })
-                        callbackRef.current.set(code, []);
+            if (!postCodes) {
+                return;
+            }
+            const fetchableCodes = postCodes.filter(code => !cacheRef.current.has(code));
+            const chunkSize = 16;
+            const chunks: string[][] = [];
+            for (let i = 0; i < fetchableCodes.length; i += chunkSize) {
+                const chunk = fetchableCodes.slice(i, i + chunkSize);
+                chunks.push(chunk);
+            }
+            chunks.forEach(chunk => {
+                    chunk.forEach(code => {
+                        cacheRef.current.set(code, false);
+                    });
+                    fetchCraftsmenBatchAsync(chunk, conn).then(() => {
+                        chunk.forEach(code => {
+                            cacheRef.current.set(code, true);
+                            callbackRef.current.get(code)?.forEach((fn) => {
+                                fn();
+                            })
+                            callbackRef.current.set(code, []);
+                        });
                     })
                 }
             )
@@ -57,8 +70,10 @@ export function QueryDataProvider({children}: PropsWithChildren) {
             findCloseByPostalCodes(lat, long)
         )
             .then((res) => res.toArray().map(
-                (row: { toJSON: () => { postcode: string } }) => row.toJSON().postcode)
-            ).then((codes) => {
+                (row: { toJSON: () => { postcode: string } }) => row.toJSON())
+            ).then((row) => {
+            return row.postcode
+        }).then((codes) => {
                 prefetchCodes(codes);
             }
         )
@@ -77,13 +92,23 @@ export function QueryDataProvider({children}: PropsWithChildren) {
                     query();
                 })
             }
+            fetchCraftsmenAsync(postCode, conn, 80, 20);
         }
+
+    const refetchDataForScroll = (postCode: string, limit: number) => {
+        const currLimit = scrollTracker.current.get(postCode) ?? 100;
+        if (limit >= 0.7 * currLimit) {
+            fetchCraftsmenAsync(postCode, conn, limit * 1.4, currLimit);
+            scrollTracker.current.set(postCode, limit * 1.4);
+        }
+    }
 
     const value = useMemo(() => ({
         prefetchData,
         prefetchForPosition,
-        queryOrSchedule
-    }), [prefetchData, prefetchForPosition, queryOrSchedule]);
+        queryOrSchedule,
+        refetchDataForScroll
+    }), [prefetchData, prefetchForPosition, queryOrSchedule, refetchDataForScroll]);
 
     return <QueryDataContext.Provider value={value}>
         {children}

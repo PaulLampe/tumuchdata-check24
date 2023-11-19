@@ -8,14 +8,21 @@ import {CraftsmanDto} from "../../types/craftsmanTypes.ts";
 import {useRef} from "react";
 
 
-export default function CraftsmenComparisonListView({craftsmen}: { craftsmen: CraftsmanDto[] }) {
+interface CraftsmenComparisonListView {
+    craftsmen: CraftsmanDto[];
+    setLimit: React.Dispatch<React.SetStateAction<number>>;
+}
+
+export default function CraftsmenComparisonListView({craftsmen, setLimit}: CraftsmenComparisonListView) {
 
     const lastCount = useRef(0);
 
     function loadMore() {
         if (lastCount.current != craftsmen.length) {
             lastCount.current = craftsmen.length;
-            console.log("loadMore");
+            setLimit(prev => {
+                return prev + 20
+            })
         }
     }
 

@@ -23,7 +23,8 @@ export function StarRating({score}: { score: number }) {
                 case 2:
                     return <FaStar color={"#FFC300"} key={val.toString() + "_" + i.toString()}/>;
                 case 1:
-                    return <FaStarHalfStroke color={"#FFC300"} key={val.toString() + "_" + i.toString()}/>
+                    return <FaStarHalfStroke strokeWidth={"20"} color={"#FFC300"}
+                                             key={val.toString() + "_" + i.toString()}/>;
             }
         })}
         <Text color={"#FFC300"}>{`(${numberOfRatings})`}</Text>

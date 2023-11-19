@@ -24,7 +24,7 @@ const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
 };
 
 export interface DuckDBWrapperValues {
-    queryCraftsmenByPostCode: (i: string) => Promise<CraftsmanDto[]>;
+    queryCraftsmenByPostCode: (postCode: string, limit:number) => Promise<CraftsmanDto[]>;
     queryCraftsmenByLocation: (lat: number, long: number) => Promise<CraftsmanDto[]>;
     conn?: duckdb.AsyncDuckDBConnection;
     db?: duckdb.AsyncDuckDB
@@ -41,9 +41,9 @@ export function DuckDBWrapper(props: PropsWithChildren) {
     const [getByPostalCodeStatement, setGetByPostalCodeStatement] = useState<duckdb.AsyncPreparedStatement>();
     const [getByLocationStatement, setGetByLocationStatement] = useState<duckdb.AsyncPreparedStatement>();
 
-    const queryCraftsmenByPostCode = async (code: string) => {
+    const queryCraftsmenByPostCode = async (code: string, limit:number) => {
         if (conn && getByPostalCodeStatement) {
-            const q = await getByPostalCodeStatement.query(code);
+            const q = await getByPostalCodeStatement.query(code, limit);
             return q.toArray().map((row: { toJSON: () => CraftsmanDto}) => row.toJSON());
         }
     }
@@ -58,7 +58,7 @@ export function DuckDBWrapper(props: PropsWithChildren) {
     async function setup() {
         const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
         const worker = new Worker(bundle.mainWorker!);
-        const logger = new duckdb.ConsoleLogger(LogLevel.NONE);
+        const logger = new duckdb.ConsoleLogger(LogLevel.ERROR);
         const db = new duckdb.AsyncDuckDB(logger, worker);
         await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
 

@@ -1,5 +1,5 @@
 import {CraftsmanDto} from "../../types/craftsmanTypes.ts";
-import {Card, Center, Circle, Flex, Text} from "@chakra-ui/react";
+import {Card, Center, Image, Flex, Text, Circle} from "@chakra-ui/react";
 import {StarRating} from "../../ui/StarRating.tsx";
 
 interface CraftsmanCardProps {
@@ -14,7 +14,14 @@ export default function CraftsmanCard(props: CraftsmanCardProps) {
     return <Card margin={2} padding={4}>
         <Flex>
             <Center padding={2}>
-                <Circle size={70} bg={'#777'}/>
+                {
+                    craftsman.profile_picture_link ? <Image
+                        borderRadius='full'
+                        boxSize='70px'
+                        src={craftsman.profile_picture_link}
+                    /> : <Circle size={70} bg={"#777"}/>
+                }
+
             </Center>
             <Flex padding={2} direction={"column"} justifyContent={"space-between"}>
                 <Text fontWeight={700} textAlign={"left"}>{craftsman.first_name + " " + craftsman.last_name}</Text>

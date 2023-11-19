@@ -1,8 +1,8 @@
 import {Center} from '@chakra-ui/react';
 import {MapContainer, TileLayer} from 'react-leaflet'
-import {LatLng, LatLngTuple} from "leaflet";
+import {LatLng, LatLngTuple, Map} from "leaflet";
 import {useDuckDBFunctions} from "../../data/duckdb/DuckDBHooks.ts";
-import {useMemo, useState} from "react";
+import {useMemo, useRef, useState} from "react";
 import {CraftsmenPinDisplay} from "./CraftsmenPinDisplay.tsx";
 import {CraftsmanDto} from "../../types/craftsmanTypes.ts";
 import {useQueryDataContext} from "../../data/query-coordination/QueryDataProvider.tsx";
@@ -23,7 +23,7 @@ function throttle(mainFunction: (...args: any[]) => void, delay: number) {
 
 
 export default function CraftsmenMap() {
-    const position: LatLngTuple = [48.2647643, 11.5890259];
+    const position: LatLngTuple = [48.2648, 11.6713];
 
     const {queryCraftsmenByLocation} = useDuckDBFunctions();
     const {prefetchForPosition} = useQueryDataContext();
@@ -38,9 +38,13 @@ export default function CraftsmenMap() {
         prefetchForPosition(lat, lng);
     }, 250), [prefetchForPosition, queryCraftsmenByLocation, setCraftsmen]);
 
+    const mapRef = useRef<Map>(null);
+
+    setTimeout(() => mapRef.current?.invalidateSize(true), 200);
+
     return <Center height={"100%"} width={"100%"}>
         <MapContainer center={position} zoom={8} scrollWheelZoom={false}
-                      style={{width: "80vw", height: "70vh"}}>
+                      style={{width: "70vw", height: "70vh"}} ref={mapRef}>
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
