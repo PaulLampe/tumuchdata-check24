@@ -8,6 +8,7 @@ class CraftsmanDto(BaseModel):
     lat: float 
     lon: float
     max_driving_distance: int
+    profile_picture_link: str
 
 class PatchRequest(BaseModel):
     maxDrivingDistance : float = None

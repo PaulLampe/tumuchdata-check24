@@ -1,0 +1,5 @@
+ALTER TABLE profile_p
+ADD COLUMN id INT;
+
+UPDATE profile_p
+SET id = ROW_NUMBER() OVER (ORDER BY link); 

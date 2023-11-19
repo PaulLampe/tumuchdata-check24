@@ -6,7 +6,8 @@ find_craftsmen_by_postcode_query ='''
             profile_score,
             lat, 
             lon,
-            max_driving_distance
+            max_driving_distance,
+            profile_picture_link
         FROM (
             SELECT
                 *,
@@ -23,7 +24,8 @@ find_craftsmen_by_postcode_query ='''
                 case when dist > default_distance then 0.01 else 0.15 end as dist_weight,
                 profile_picture_score * 0.4 + profile_description_score * 0.6 as profile_score,
                 dist_weight * dist_score + (1 - dist_weight) * profile_score as rank,
-                max_driving_distance
+                max_driving_distance,
+                c.profile_picture_link
             FROM
             service_provider_profile c, postcode p, quality_factor_score f
             WHERE 

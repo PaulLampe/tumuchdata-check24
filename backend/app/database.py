@@ -25,7 +25,8 @@ class Database:
                     "profile_score": val[3],
                     "lat": val[4],
                     "lon": val[5] ,
-                    "max_driving_distance": val[6]
+                    "max_driving_distance": val[6],
+                    "profile_picture_link": val[7]
             }
         )
         val = self.connection.fetchone()
