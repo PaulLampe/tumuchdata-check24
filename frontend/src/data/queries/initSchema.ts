@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS service_provider_profile (
   lat double DEFAULT NULL,
   lon double DEFAULT NULL,
   profile_score double NOT NULL,
+  max_driving_distance int NOT NULL,
+  profile_picture_link varchar(1024) NULL,
   PRIMARY KEY (id)
 );
         `

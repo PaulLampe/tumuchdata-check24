@@ -1,4 +1,4 @@
-import {Flex, Input, Tab, TabList, TabPanel, TabPanels, Tabs, Text} from "@chakra-ui/react";
+import {Flex, Grid, Input, SimpleGrid, Tab, TabList, TabPanel, TabPanels, Tabs, Text} from "@chakra-ui/react";
 import CraftsmenComparisonListView from "./craftsmen-comparison/CraftsmenComparisonListView.tsx";
 import CraftsmenMap from "./craftsmen-map/CraftsmenMap.tsx";
 import {useQueryDataContext} from "../data/query-coordination/QueryDataProvider.tsx";
@@ -11,8 +11,11 @@ export function CraftsmenComparisonPage() {
 
     const {prefetchData} = useQueryDataContext();
 
-    const {data, loading} = useQueryData(postalCode);
+    const [limit, setLimit] = useState(20);
+
+    const {data, loading} = useQueryData(postalCode, limit);
     const handleChange = (val: string) => {
+        setLimit(20);
         if (val.length == 4) {
             prefetchData(val);
         }
@@ -25,7 +28,14 @@ export function CraftsmenComparisonPage() {
         alignItems={"flex-start"}
         flexDirection={"column"}
     >
-        <Flex width={"100%"} height={100} backgroundColor={"#063773"} padding={8} alignItems={"center"}>
+        <SimpleGrid
+            width={"100%"}
+            backgroundColor={"#063773"}
+            padding={8}
+            alignItems={"center"}
+            gap={{sm: 4, md: 1}}
+            columns={{sm: 1, md: 2}}
+        >
             <Text color={"#fff"} fontSize={"3xl"} fontWeight={700} width={600} textAlign={"left"}>TUMuchData
                 x Check24</Text>
             <Input
@@ -37,7 +47,7 @@ export function CraftsmenComparisonPage() {
                 onChange={(e) => handleChange(e.target.value)}
                 backgroundColor={"#fff"}
             />
-        </Flex>
+        </SimpleGrid>
         <Tabs isFitted variant='enclosed' width={"100%"} height={"100%"} overflow={"hidden"}>
             <TabList>
                 <Tab>List</Tab>
@@ -46,7 +56,7 @@ export function CraftsmenComparisonPage() {
             <TabPanels height={"calc(100% - 42px)"} width={"100%"}>
                 <TabPanel height={"100%"} width={"100%"}>
                     {
-                        !loading && <CraftsmenComparisonListView craftsmen={data}/>
+                        !loading && <CraftsmenComparisonListView craftsmen={data} setLimit={setLimit}/>
                     }
                 </TabPanel>
                 <TabPanel height={"100%"}>

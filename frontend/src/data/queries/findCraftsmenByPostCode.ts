@@ -28,8 +28,8 @@ export const findCraftsmenByPostCode = `
         FROM 
             service_provider_profile c, postcodes p
         WHERE 
-            p.postcode = ? and dist < 100.00 -- TODO: get max_distance ....
+            p.postcode = ? and dist < max_driving_distance
     )
     ORDER BY rank DESC
-    LIMIT 20;
+    LIMIT ?;
 `;

@@ -27,7 +27,8 @@ export const findCraftsmenByLocation = `
             dist_weight::double * dist_score::double + (1.00::double - dist_weight::double) * profile_score::double as rank,
         FROM 
             service_provider_profile c
-        -- TODO: get max_distance ....
+        WHERE
+            dist * 1000 < max_driving_distance
     )
     ORDER BY rank DESC
     LIMIT 20;           
