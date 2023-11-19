@@ -15,13 +15,16 @@ export const useQueryData = (postCode: string): { loading: boolean, data: Crafts
         return {loading, data};
     }
 
-    const queryAndLoad = () => queryCraftsmenByPostCode(postCode).then((craftsmen) => {
-        setLoadedCode(postCode);
-        setData(craftsmen);
-        setLoading(false);
-    });
+    if (postCode.length == 5) {
+        const queryAndLoad = () => queryCraftsmenByPostCode(postCode).then((craftsmen) => {
+            setLoadedCode(postCode);
+            setData(craftsmen);
+            setLoading(false);
+        });
 
-    queryOrSchedule(postCode, queryAndLoad);
+        queryOrSchedule(postCode, queryAndLoad);
+    }
+
 
     return {loading, data}
 };
