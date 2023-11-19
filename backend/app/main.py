@@ -17,7 +17,7 @@ app.add_middleware(
 database = Database()
 
 @app.get("/craftman/{craftman_id}")
-async def getCraftsman(craftman_id: str) -> C:
+async def getCraftsman(craftman_id: str):
     return database.getSingleCraftsman(craftman_id)
 
 @app.get("/craftsmen")
