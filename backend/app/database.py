@@ -8,8 +8,6 @@ db_path = 'data/db'
 
 class Database:
   def __init__(self) -> None:
-    #if os.path.isfile(db_path):
-    #  ingest_data_query = ''
     self.connection = duckdb.connect(db_path)
     self.connection.sql(schema_query)
     self.connection.sql(ingest_data_query)
