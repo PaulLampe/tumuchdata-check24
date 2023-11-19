@@ -4,6 +4,8 @@ import {CraftsmanDto} from "../../types/craftsmanTypes.ts";
 import {LeafletEvent, LatLng, icon, LatLngTuple} from "leaflet";
 import greenMarker from '../../assets/map-marker-green.svg';
 import redMarker from '../../assets/map-marker.svg';
+import {Text} from '@chakra-ui/react';
+import {StarRating} from "../../ui/StarRating.tsx";
 
 
 interface CraftsmenPinDisplayProps {
@@ -42,8 +44,19 @@ export function CraftsmenPinDisplay(props: CraftsmenPinDisplayProps) {
 
     return <>
         {
-            craftsmen?.map((c) => <Marker position={[c.lat, c.lon]} key={c.id} // TODO: Format
-                                          icon={craftsmanIcon}><Popup>{c.first_name + " " + c.last_name + " " + c.profile_score + "/3"}</Popup></Marker>)
+            craftsmen?.map(
+                (c) => (
+                    <Marker position={[c.lat, c.lon]}
+                            key={c.id}
+                            icon={craftsmanIcon}
+                    >
+                        <Popup>
+                            <Text fontSize={'xl'} fontWeight={700}>{c.first_name + " " + c.last_name}</Text>
+                            {<StarRating score={Math.round(c.profile_score * 10 / 3)}/>}
+                        </Popup>
+                    </Marker>
+                )
+            )
         }
         <Marker position={center} icon={centerIcon}/>
     </>;
