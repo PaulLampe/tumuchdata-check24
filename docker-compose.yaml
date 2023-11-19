@@ -5,6 +5,7 @@ services:
     build:
       context: ./frontend
       dockerfile: ./Dockerfile
+    command: serve -s dist
     container_name: frontend 
     ports:
       - "3000:3000"
