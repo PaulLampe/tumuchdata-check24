@@ -9,6 +9,8 @@ import {CraftsmanDto} from "../../types/craftsmanTypes.ts";
 import {postcodes} from "../../mock/postcodes.ts";
 import {schema} from "../queries/initSchema.ts";
 import {findCraftsmenByPostCode} from "../queries/findCraftsmenByPostCode.ts";
+import {findCraftsmenByLocation} from "../queries/findCraftsmenByLocation.ts";
+import {quality_factor_scores} from "../../mock/quality_factor_score.ts";
 
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
@@ -22,8 +24,8 @@ const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
 };
 
 export interface DuckDBWrapperValues {
-    query: (i: string) => Promise<CraftsmanDto[]>;
-    //query2: (lat: number, long: number, dist: number, profile: number) => Promise<CraftsmanDto[]>;
+    queryCraftsmenByPostCode: (i: string) => Promise<CraftsmanDto[]>;
+    queryCraftsmenByLocation: (lat: number, long: number) => Promise<CraftsmanDto[]>;
     conn?: duckdb.AsyncDuckDBConnection;
     db?: duckdb.AsyncDuckDB
 }
@@ -35,21 +37,23 @@ export function DuckDBWrapper(props: PropsWithChildren) {
 
     const [db, setDB] = useState<duckdb.AsyncDuckDB>();
     const [conn, setConn] = useState<duckdb.AsyncDuckDBConnection>();
+    const [conn2, setConn2] = useState<duckdb.AsyncDuckDBConnection>();
     const [getByPostalCodeStatement, setGetByPostalCodeStatement] = useState<duckdb.AsyncPreparedStatement>();
-    // const [stmnt2, setStmnt2] = useState<duckdb.AsyncPreparedStatement>();
-    const query = async (code: string) => {
+    const [getByLocationStatement, setGetByLocationStatement] = useState<duckdb.AsyncPreparedStatement>();
+
+    const queryCraftsmenByPostCode = async (code: string) => {
         if (conn && getByPostalCodeStatement) {
             const q = await getByPostalCodeStatement.query(code);
             return q.toArray().map((row: { toJSON: () => CraftsmanDto}) => row.toJSON());
         }
     }
 
-    /*const query2 = async (lat: number, long: number, dist: number = 0.5, profile: number = 0.5) => {
-        if (conn && stmnt2) {
-            const q = await stmnt2.query(lat, long, dist, profile);
-            return q.toArray().map((row: unknown) => (row as any).toJSON());
+    const queryCraftsmenByLocation = async (lat: number, long: number) => {
+        if (conn && getByLocationStatement) {
+            const q = await getByLocationStatement.query(lat, long);
+            return q.toArray().map((row: { toJSON: () => CraftsmanDto}) => row.toJSON());
         }
-    }*/
+    }
 
     async function setup() {
         const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
@@ -66,34 +70,45 @@ export function DuckDBWrapper(props: PropsWithChildren) {
         await db.registerFileBuffer("postcode", post_code);
         await c.insertJSONFromPath("postcode", {name: "postcodes"});
 
+        const scores = encoder.encode(JSON.stringify(quality_factor_scores));
+        await db.registerFileBuffer("quality_factor_scores", scores);
+        await c.insertJSONFromPath("quality_factor_scores", {name: "quality_factor_scores"});
+
+        const c2 = await db.connect();
+
+        const locationStatement = await c2.prepare(findCraftsmenByLocation);
+        setGetByLocationStatement(locationStatement);
+
         const postalCodeStatement = await c.prepare(findCraftsmenByPostCode);
         setGetByPostalCodeStatement(postalCodeStatement);
 
-        //const s2 = await c.prepare(findCraftsmenByLocation);
-        //setStmnt2(s2);
-
         setDB(db);
         setConn(c);
+        setConn2(c2);
     }
 
     const teardown = useCallback(async () => {
         if (getByPostalCodeStatement) {
             await getByPostalCodeStatement.close();
-            console.log("cleaned up statement")
+            setGetByPostalCodeStatement(undefined);
+            console.log("cleaned up postal code statement")
         }
-        /*if (stmnt2) {
-            await stmnt2.close();
-            console.log("cleaned up statement")
-        }*/
         if (conn) {
             await conn.close();
+            setConn(undefined);
             console.log("cleaned up conn")
+        }
+        if (conn2) {
+            await conn2.close();
+            setConn2(undefined);
+            console.log("cleaned up conn2")
         }
         if (db) {
             await db.terminate();
+            setDB(undefined);
             console.log("cleaned up db")
         }
-    }, [conn, db])
+    }, [conn, db, getByPostalCodeStatement, getByLocationStatement, conn2])
 
     useEffect(() => {
         setup().then(() => console.log("setup"));
@@ -103,7 +118,7 @@ export function DuckDBWrapper(props: PropsWithChildren) {
         return () => {
             teardown();
         }
-    }, [teardown, db, conn]);
+    }, [teardown, conn, db, conn2]);
 
-    return <DuckDBWrapperContext.Provider value={{query, /*query2,*/ conn, db}}>{children}</DuckDBWrapperContext.Provider>
+    return <DuckDBWrapperContext.Provider value={{queryCraftsmenByPostCode, queryCraftsmenByLocation, conn, db}}>{children}</DuckDBWrapperContext.Provider>
 }

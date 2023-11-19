@@ -1,7 +1,7 @@
 import {Flex, Input, Tab, TabList, TabPanel, TabPanels, Tabs, Text} from "@chakra-ui/react";
 import CraftsmenComparisonListView from "./craftsmen-comparison/CraftsmenComparisonListView.tsx";
 import CraftsmenMap from "./craftsmen-map/CraftsmenMap.tsx";
-import {useQueryDataContext} from "../data/query-coordinator/QueryDataProvider.tsx";
+import {useQueryDataContext} from "../data/query-coordination/QueryDataProvider.tsx";
 import {useState} from "react";
 
 export function CraftsmenComparisonPage() {

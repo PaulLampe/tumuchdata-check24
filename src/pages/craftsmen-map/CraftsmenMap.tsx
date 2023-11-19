@@ -1,8 +1,12 @@
 import {Center} from '@chakra-ui/react';
 import {MapContainer, TileLayer} from 'react-leaflet'
-import {LatLngTuple} from "leaflet";
+import {LatLng, LatLngTuple} from "leaflet";
+import {useDuckDBFunctions} from "../../data/duckdb/DuckDBHooks.ts";
+import {useMemo, useState} from "react";
+import {CraftsmenPinDisplay} from "./CraftsmenPinDisplay.tsx";
+import {CraftsmanDto} from "../../types/craftsmanTypes.ts";
+import {useQueryDataContext} from "../../data/query-coordination/QueryDataProvider.tsx";
 
-/*
 function throttle(mainFunction: (...args: any[]) => void, delay: number) {
     let timerFlag: any = null; // Variable to keep track of the timer
 
@@ -15,20 +19,24 @@ function throttle(mainFunction: (...args: any[]) => void, delay: number) {
             }, delay);
         }
     };
-}*/
+}
 
 
 export default function CraftsmenMap() {
     const position: LatLngTuple = [48.2647643, 11.5890259];
 
-    //const {query2} = useDuckDBFunctions();
+    const {queryCraftsmenByLocation} = useDuckDBFunctions();
+    const {prefetchForPosition} = useQueryDataContext();
 
-    // const [craftsmen, setCraftsmen] = useState<CraftsmanDto[]>([]);
+    const [craftsmen, setCraftsmen] = useState<CraftsmanDto[]>([]);
 
-    /*const throttledQuery = useMemo(() => throttle((coords: LatLng) => {
+    const throttledQuery = useMemo(() => throttle((coords: LatLng) => {
         const {lat, lng} = coords;
-        query2(lat, lng, 0.5, 0.5).then(setCraftsmen);
-    }, 250), [query2, setCraftsmen]);*/
+        queryCraftsmenByLocation(lat, lng).then((data) => {
+            setCraftsmen(data);
+        });
+        prefetchForPosition(lat, lng);
+    }, 250), [prefetchForPosition, queryCraftsmenByLocation, setCraftsmen]);
 
     return <Center height={"100%"} width={"100%"}>
         <MapContainer center={position} zoom={8} scrollWheelZoom={false}
@@ -37,7 +45,7 @@ export default function CraftsmenMap() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {/*<CraftsmenPinDisplay craftsmen={craftsmen} query={throttledQuery}/>*/}
+            <CraftsmenPinDisplay craftsmen={craftsmen} query={throttledQuery}/>
         </MapContainer>
     </Center>;
 }
